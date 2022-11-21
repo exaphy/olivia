@@ -1,0 +1,37 @@
+import SwiftUI
+
+struct ContentView: View {
+    @StateObject var teachers = Teachers()
+    @State private var showSheet = false
+    
+    var body: some View { 
+        NavigationView {
+            List {
+                ForEach(teachers.assignments) { assignment in
+                    NavigationLink {
+                        DetailView(teachers: teachers, assignment: assignment)
+                            .navigationTitle(assignment.assignmentName)
+                    } label: {
+                        Text(assignment.assignmentName)
+                    }
+                } 
+                .onDelete(perform: delete)
+            }
+            .navigationTitle("Olivia")
+            .toolbar {
+                Button {
+                    showSheet = true 
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+            .sheet(isPresented: $showSheet) {
+                AddInfo(teachers: teachers)
+            }
+        }
+    }
+    
+    func delete(at offsets: IndexSet) {
+        teachers.assignments.remove(atOffsets: offsets)
+    }
+}
