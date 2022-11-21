@@ -1,0 +1,112 @@
+import SwiftUI
+
+struct AddInfo: View {
+    @ObservedObject var teachers: Teachers 
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var pickerSelection = 0
+    let pickerChoices = ["Add Classes", "Add Assignment"]
+      
+    @State private var className = ""
+    @State private var period = 0
+    
+    @State private var assignmentName = ""
+    @State private var teacherSelection = ""
+    @State private var dueDate = Date.now
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    Picker("Add Info", selection: $pickerSelection) {
+                        if teachers.teachers.count == 0 {
+                            Text("Add Classes") 
+                        } else {
+                            ForEach(pickerChoices.indices, id: \.self) { 
+                                Text(pickerChoices[$0])
+                            }
+                        }
+                    } 
+                    .pickerStyle(.segmented)
+                }
+                
+                    if pickerSelection == 0 {
+                        Section("Information") {
+                            TextField("Class Name", text: $className)
+                            Picker("Period", selection: $period) {
+                                ForEach(2..<8) {
+                                    Text(String($0))
+                                }
+                            }
+                            if !className.trimmingCharacters(in: .whitespaces).isEmpty {
+                                Button("Add Class", action: addTeacher)
+                            }
+                        }
+                        } else {
+                            Section("Information") {
+                                TextField("Assignment Name", text: $assignmentName)
+                                Picker("Class", selection: $teacherSelection) {
+                                    ForEach(teachers.teachers) {
+                                        Text($0.className).tag($0.className)
+                                    }
+                                }
+                            }
+                            Section("Due Date") {
+                                DatePicker("Due Date", selection: $dueDate, in: Date.now...) 
+                                    .datePickerStyle(.graphical)
+                            }
+                        }
+                
+                Section {
+                    if pickerSelection == 0 {
+                        ForEach(teachers.teachers) {
+                            Text($0.className)
+                                .badge($0.period)
+                        }
+                        .onDelete(perform: delete)
+                    }
+                }
+            }
+                .navigationTitle(pickerChoices[pickerSelection])
+                .toolbar {
+                    if pickerSelection == 0 {
+                        Button("Done") {
+                            dismiss()
+                        }
+                    } else {
+                        Button("Add Assignment") {
+                            addAssignment()
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        }
+                        .disabled(assignmentName.isEmpty)
+                    }
+                }
+        }
+    }
+        
+        func addTeacher() {
+            let teacher = Teacher(className: className, period: period + 2)
+            teachers.teachers.append(teacher)
+            className = ""
+            period += 1
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        
+        func addAssignment() {
+            if teacherSelection == "" {
+                let classData = teachers.teachers[0]
+                let newSelection = classData.className
+                
+                let assignment = Assignment(teacher: newSelection, assignmentName: assignmentName, dueDate: dueDate)
+                teachers.assignments.append(assignment) 
+            } else {
+                let assignment = Assignment(teacher: teacherSelection, assignmentName: assignmentName, dueDate: dueDate)
+                teachers.assignments.append(assignment) 
+            }
+            dismiss()
+        }
+    
+    func delete(at offsets: IndexSet) {
+        teachers.teachers.remove(atOffsets: offsets)
+    }
+}
