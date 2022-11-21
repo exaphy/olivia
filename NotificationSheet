@@ -1,0 +1,83 @@
+import SwiftUI
+import UserNotifications
+
+struct NotificationSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var notificationDate = Date.now
+    let assignment: Assignment
+    let engine = UINotificationFeedbackGenerator()
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    Text("Assignment")
+                        .badge(assignment.assignmentName)
+                    Text("Due Date")
+                        .badge(assignment.dueDate.formatted())
+                }
+                
+                Section("Send Notification") {
+                    if assignment.dueDate > Date.now {
+                        DatePicker("Notification Date", selection: $notificationDate, in: Date.now...assignment.dueDate)
+                            .datePickerStyle(.graphical)
+                    } else {
+                        DatePicker("Notification Date", selection: $notificationDate, in: Date.now...)
+                            .datePickerStyle(.graphical)
+                    }
+                }
+            }
+            .navigationTitle("Notification")
+            .toolbar {
+                Button("Send Notification") {
+                    addNotification()
+                }
+            }
+        }
+    }
+    
+    func addNotification() {
+        let center = UNUserNotificationCenter.current()
+        
+        let addRequest = {
+            let content = UNMutableNotificationContent()
+            content.title = assignment.assignmentName 
+            content.body = "Time to work on \(assignment.assignmentName). It is due at \(assignment.dueDate.formatted(date: .long, time: .shortened))"
+            content.sound = .defaultCritical
+            
+            let calendar = Calendar.current 
+            let day = calendar.component(.day, from: notificationDate)
+            let hour = calendar.component(.hour, from: notificationDate)
+            let minute = calendar.component(.minute, from: notificationDate)
+            var dateComponents = DateComponents()
+            dateComponents.day = day 
+            dateComponents.hour = hour 
+            dateComponents.minute = minute
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+            center.add(request)
+            engine.notificationOccurred(.success)
+        }
+        
+        center.getNotificationSettings { settings in 
+            if settings.authorizationStatus == .authorized {
+                addRequest()
+                dismiss()
+            } else {
+                center.requestAuthorization(options: [.alert, .badge, .sound]) { success, error in 
+                    if success {
+                        addRequest()
+                        dismiss()
+                    } else {
+                        print("Uh oh!")
+                        engine.notificationOccurred(.error)
+                        dismiss()
+                    }
+                }
+            }
+            
+        }
+    }
+}
+
