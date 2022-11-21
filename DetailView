@@ -1,0 +1,65 @@
+import SwiftUI
+
+struct DetailView: View {
+    @State private var showSheet = false
+    @State private var date = Date.now 
+    @State private var edit = false
+    @ObservedObject var teachers: Teachers
+    let assignment: Assignment
+    var disabled: Bool {
+        if edit == false {
+            return true 
+        }
+        return false
+    }
+    
+    var body: some View {
+        List {
+            Section {
+                Text("Class")
+                    .badge(assignment.teacher)
+                Text("Assignment")
+                    .badge(assignment.assignmentName)
+                
+                
+                if edit == true {
+                    DatePicker("Due Date", selection: $date, in: Date.now...) 
+                    .disabled(disabled)
+                    .datePickerStyle(.graphical)
+                } else {
+                    Text("Due Date")
+                        .badge(assignment.dueDate.formatted())
+                }
+            }
+        }
+        .toolbar {
+            if edit == false {
+                Button("Edit") {
+                    edit = true 
+                }
+                .contextMenu {
+                    Button("Add Notification") {
+                        showSheet = true
+                    }
+                }
+            } else {
+                Button("Done") {
+                    edit = false
+                    changeDate()
+                }
+            }
+        }
+        .sheet(isPresented: $showSheet) {
+            NotificationSheet(assignment: assignment)
+        }
+    }
+    
+    func changeDate() {
+        var newAssignment = assignment 
+        newAssignment.dueDate = date 
+        if let index = teachers.assignments.firstIndex(of: assignment) {
+            teachers.assignments.remove(at: index)
+            teachers.assignments.append(newAssignment)
+        }
+    }
+}
