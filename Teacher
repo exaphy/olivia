@@ -1,0 +1,7 @@
+import SwiftUI
+
+struct Teacher: Codable, Identifiable {
+    var id = UUID()
+    let className: String 
+    let period: Int
+}
