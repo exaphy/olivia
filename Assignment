@@ -1,0 +1,12 @@
+import SwiftUI
+
+struct Assignment: Codable, Equatable, Identifiable {
+    var id = UUID()
+    let teacher: String 
+    let assignmentName: String
+    var dueDate: Date 
+    
+    static func ==(lhs: Assignment, rhs: Assignment) -> Bool {
+        lhs.id == rhs.id
+    }
+}
